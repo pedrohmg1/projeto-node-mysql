@@ -18,13 +18,13 @@ CREATE TABLE produtos (
 ```
 ## 3. Configuração de Credenciais
 
-const connection = mysql.createConnection({
+```const connection = mysql.createConnection({
     host: 'localhost',
     user: 'root',
     password: 'phmg2106',
     database: 'loja'
 });
-
+```
 
 ## Navegue até o diretório do projeto e execute:
 
