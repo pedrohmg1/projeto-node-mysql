@@ -12,9 +12,18 @@ const connection = mysql.createConnection({
     database: 'loja'
 });
 
-// Listar produtos
+// Listar produtos 
 app.get('/produtos', (req, res) => {
-    connection.query('SELECT * FROM produtos', (err, results) => {
+    const { busca } = req.query;
+    let sql = 'SELECT * FROM produtos';
+    let params = [];
+
+    if (busca) {
+        sql += ' WHERE nome LIKE ? OR categoria LIKE ?';
+        params = [`%${busca}%`, `%${busca}%`];
+    }
+
+    connection.query(sql, params, (err, results) => {
         if (err) return res.status(500).send(err);
         res.json(results);
     });
@@ -30,7 +39,6 @@ app.get('/adicionar', (req, res) => {
     });
 });
 
-// --- ROTA DE ATUALIZAÇÃO (Faltava esta parte) ---
 app.get('/atualizar', (req, res) => {
     const { id, nome, valor, categoria, qtd } = req.query;
     const sql = "UPDATE produtos SET nome = ?, valor = ?, categoria = ?, quantidade = ? WHERE id = ?";
