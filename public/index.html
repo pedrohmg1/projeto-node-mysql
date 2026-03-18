@@ -3,73 +3,101 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Minha Loja Node + Tailwind</title>
+    <title>Gestão de Inventário</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-100 font-sans">
-
-    <nav class="bg-blue-600 p-4 text-white shadow-lg">
-        <div class="container mx-auto flex justify-between items-center">
-            <h1 class="text-2xl font-bold">Loja Virtual</h1>
-            <span class="text-sm">Node.js + MySQL</span>
+<body class="bg-gray-100 min-h-screen">
+    <nav class="bg-indigo-600 p-4 text-white shadow-md">
+        <div class="container mx-auto">
+            <h1 class="text-2xl font-bold text-center">Gestão de Inventário</h1>
         </div>
     </nav>
 
-    <div class="container mx-auto p-6">
-        <div class="bg-white p-6 rounded-lg shadow-md mb-8">
-            <h2 class="text-xl font-semibold mb-4 text-gray-700">Cadastrar Novo Produto</h2>
-            <div class="flex flex-wrap gap-4">
-                <input id="nome" type="text" placeholder="Nome do Produto" class="border p-2 rounded flex-1">
-                <input id="valor" type="number" placeholder="Preço (R$)" class="border p-2 rounded w-32">
-                <button onclick="adicionarProduto()" class="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded transition font-bold">
+    <div class="container mx-auto p-6 max-w-4xl">
+        <div class="bg-white p-6 rounded-xl shadow-sm mb-8 border border-gray-200">
+            <h2 id="form-title" class="text-lg font-bold mb-4 text-gray-700">Novo Produto</h2>
+            <input type="hidden" id="prod-id"> <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <input id="nome" type="text" placeholder="Ex: Teclado" class="border p-2 rounded-lg outline-indigo-500">
+                <input id="valor" type="number" placeholder="Preço R$" class="border p-2 rounded-lg outline-indigo-500">
+                <button id="btn-salvar" onclick="salvarProduto()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 rounded-lg transition">
                     Adicionar
                 </button>
             </div>
+            <button id="btn-cancelar" onclick="limparFormulario()" class="hidden text-sm text-gray-500 mt-2 underline">Cancelar edição</button>
         </div>
 
-        <h2 class="text-xl font-semibold mb-4 text-gray-700">Produtos em Estoque</h2>
-        <div id="lista-produtos" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            </div>
+        <div id="lista-produtos" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
     </div>
 
     <script>
-        // Função para buscar produtos da sua API
+        let editando = false;
+
         async function carregarProdutos() {
-            const response = await fetch('/produtos');
-            const produtos = await response.json();
-            const lista = document.getElementById('lista-produtos');
-            lista.innerHTML = '';
+            const res = await fetch('/produtos');
+            const produtos = await res.json();
+            const container = document.getElementById('lista-produtos');
+            container.innerHTML = '';
 
             produtos.forEach(p => {
-                lista.innerHTML += `
-                    <div class="bg-white p-4 rounded-lg shadow border-l-4 border-blue-500 flex justify-between items-center">
+                container.innerHTML += `
+                    <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200 flex justify-between items-center">
                         <div>
-                            <p class="font-bold text-lg text-gray-800">${p.nome}</p>
-                            <p class="text-blue-600 font-semibold text-sm">R$ ${p.valor.toFixed(2)}</p>
+                            <h3 class="font-bold text-gray-800">${p.nome}</h3>
+                            <p class="text-indigo-600 font-medium text-sm">R$ ${Number(p.valor).toFixed(2)}</p>
                         </div>
-                        <button onclick="deletarProduto(${p.id})" class="text-red-500 hover:text-red-700 font-bold">
-                            Remover
-                        </button>
+                        <div class="flex gap-2">
+                            <button onclick="prepararEdicao(${p.id}, '${p.nome}', ${p.valor})" class="text-blue-500 hover:bg-blue-50 p-2 rounded-lg transition text-sm font-bold">Editar</button>
+                            <button onclick="deletarProduto(${p.id})" class="text-red-500 hover:bg-red-50 p-2 rounded-lg transition text-sm font-bold">Remover</button>
+                        </div>
                     </div>
                 `;
             });
         }
 
-        async function adicionarProduto() {
-            const nome = document.getElementById('nome').value;
-            const valor = document.getElementById('valor').value;
-            
-            if(!nome || !valor) return alert("Preencha tudo!");
+        function prepararEdicao(id, nome, valor) {
+            editando = true;
+            document.getElementById('prod-id').value = id;
+            document.getElementById('nome').value = nome;
+            document.getElementById('valor').value = valor;
+            document.getElementById('form-title').innerText = "Editar Produto";
+            document.getElementById('btn-salvar').innerText = "Atualizar";
+            document.getElementById('btn-salvar').classList.replace('bg-indigo-600', 'bg-orange-500');
+            document.getElementById('btn-cancelar').classList.remove('hidden');
+        }
 
-            await fetch(`/adicionar?nome=${nome}&valor=${valor}`);
-            carregarProdutos(); // Atualiza a lista
+        function limparFormulario() {
+            editando = false;
+            document.getElementById('prod-id').value = '';
             document.getElementById('nome').value = '';
             document.getElementById('valor').value = '';
+            document.getElementById('form-title').innerText = "Novo Produto";
+            document.getElementById('btn-salvar').innerText = "Adicionar";
+            document.getElementById('btn-salvar').classList.replace('bg-orange-500', 'bg-indigo-600');
+            document.getElementById('btn-cancelar').classList.add('hidden');
+        }
+
+        async function salvarProduto() {
+            const id = document.getElementById('prod-id').value;
+            const nome = document.getElementById('nome').value;
+            const valor = document.getElementById('valor').value;
+
+            if(!nome || !valor) return alert("Preencha os campos!");
+
+            if (editando) {
+                await fetch(`/atualizar?id=${id}&nome=${nome}&valor=${valor}`);
+            } else {
+                await fetch(`/adicionar?nome=${nome}&valor=${valor}`);
+            }
+
+            limparFormulario();
+            carregarProdutos();
         }
 
         async function deletarProduto(id) {
-            await fetch(`/deletar/${id}`);
-            carregarProdutos();
+            if(confirm("Deseja realmente remover?")) {
+                await fetch(`/deletar/${id}`);
+                carregarProdutos();
+            }
         }
 
         carregarProdutos();
