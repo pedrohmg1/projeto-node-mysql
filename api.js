@@ -3,26 +3,16 @@ const mysql = require('mysql2');
 const app = express();
 const port = 3000;
 
-// Configuração para servir o frontend (index.html) que está na pasta public
 app.use(express.static('public'));
 
-// Configuração do Banco de Dados com a tua senha
 const connection = mysql.createConnection({
     host: 'localhost',
     user: 'root',
-    password: 'phmg2106', 
+    password: 'phmg2106',
     database: 'loja'
 });
 
-connection.connect((err) => {
-    if (err) {
-        console.error('Erro ao ligar ao MySQL:', err);
-        return;
-    }
-    console.log('Conectado ao MySQL com sucesso!');
-});
-
-// Rota para listar produtos
+// Listar produtos
 app.get('/produtos', (req, res) => {
     connection.query('SELECT * FROM produtos', (err, results) => {
         if (err) return res.status(500).send(err);
@@ -30,45 +20,43 @@ app.get('/produtos', (req, res) => {
     });
 });
 
-// Rota para adicionar produto
+// Adicionar produto
 app.get('/adicionar', (req, res) => {
-    const { nome, valor } = req.query;
-
-    if (!nome || !valor || parseFloat(valor) < 0) {
-        return res.status(400).send("Dados inválidos ou preço negativo.");
-    }
-
-    const sql = "INSERT INTO produtos (nome, valor) VALUES (?, ?)";
-    connection.query(sql, [nome, valor], (err, result) => {
+    const { nome, valor, categoria, qtd } = req.query;
+    const sql = "INSERT INTO produtos (nome, valor, categoria, quantidade) VALUES (?, ?, ?, ?)";
+    connection.query(sql, [nome, valor, categoria || 'Geral', qtd || 0], (err) => {
         if (err) return res.status(500).send(err);
-        res.send(`Produto ${nome} adicionado!`);
+        res.send("Inserido");
     });
 });
 
-// Rota para eliminar produto
-app.get('/deletar/:id', (req, res) => {
-    const id = req.params.id;
-    connection.query("DELETE FROM produtos WHERE id = ?", [id], (err) => {
-        if (err) return res.status(500).send(err);
-        res.send("Removido.");
-    });
-});
-
-// Rota para atualizar produto (UPDATE)
+// --- ROTA DE ATUALIZAÇÃO (Faltava esta parte) ---
 app.get('/atualizar', (req, res) => {
-    const { id, nome, valor } = req.query;
-
-    if (!id || !nome || !valor || parseFloat(valor) < 0) {
-        return res.status(400).send("Dados inválidos.");
-    }
-
-    const sql = "UPDATE produtos SET nome = ?, valor = ? WHERE id = ?";
-    connection.query(sql, [nome, valor, id], (err, result) => {
+    const { id, nome, valor, categoria, qtd } = req.query;
+    const sql = "UPDATE produtos SET nome = ?, valor = ?, categoria = ?, quantidade = ? WHERE id = ?";
+    connection.query(sql, [nome, valor, categoria, qtd, id], (err) => {
         if (err) return res.status(500).send(err);
-        res.send("Produto atualizado com sucesso!");
+        res.send("Atualizado");
     });
 });
 
-app.listen(port, () => {
-    console.log(`Servidor a correr em http://localhost:${port}`);
+// Atualizar estoque rápido
+app.get('/stock', (req, res) => {
+    const { id, acao } = req.query;
+    const operacao = acao === 'aumentar' ? 'quantidade + 1' : 'quantidade - 1';
+    const sql = `UPDATE produtos SET quantidade = ${operacao} WHERE id = ?`;
+    connection.query(sql, [id], (err) => {
+        if (err) return res.status(500).send(err);
+        res.send("Estoque atualizado");
+    });
 });
+
+// Deletar
+app.get('/deletar/:id', (req, res) => {
+    connection.query("DELETE FROM produtos WHERE id = ?", [req.params.id], (err) => {
+        if (err) return res.status(500).send(err);
+        res.send("Removido");
+    });
+});
+
+app.listen(port, () => console.log(`Servidor rodando em http://localhost:${port}`));

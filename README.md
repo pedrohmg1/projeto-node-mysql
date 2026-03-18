@@ -13,6 +13,8 @@ CREATE TABLE produtos (
     id INT NOT NULL AUTO_INCREMENT,
     nome VARCHAR(50) NOT NULL,
     valor DOUBLE NOT NULL,
+    categoria VARCHAR(30) DEFAULT 'Geral',
+    quantidade INT DEFAULT 0,
     PRIMARY KEY (id)
 );
 ```
