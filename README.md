@@ -15,7 +15,7 @@ CREATE TABLE produtos (
     valor DOUBLE NOT NULL,
     PRIMARY KEY (id)
 );
-
+```
 ## 3. Configuração de Credenciais
 
 const connection = mysql.createConnection({
